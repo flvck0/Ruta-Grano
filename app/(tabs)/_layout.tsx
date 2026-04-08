@@ -5,11 +5,11 @@ import { Platform } from 'react-native';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
-const tint = '#e8c4b0';
-const inactive = '#6b5d52';
+const tint = '#A07850';
+const inactive = '#C4B5A4';
 
 function TabBarIcon({ name, color }: { name: keyof typeof Ionicons.glyphMap; color: string }) {
-  return <Ionicons size={26} name={name} color={color} style={{ marginBottom: -2 }} />;
+  return <Ionicons size={24} name={name} color={color} style={{ marginBottom: -2 }} />;
 }
 
 export default function TabLayout() {
@@ -20,10 +20,16 @@ export default function TabLayout() {
         tabBarInactiveTintColor: inactive,
         headerShown: useClientOnlyValue(false, true),
         tabBarStyle: {
-          backgroundColor: '#1c1410',
-          borderTopColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: '#FAF5EF',
+          borderTopColor: 'rgba(180,160,140,0.25)',
+          borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingTop: 6,
+          shadowColor: '#3D2B1F',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -31,12 +37,20 @@ export default function TabLayout() {
           letterSpacing: 0.3,
         },
         headerStyle: {
-          backgroundColor: '#1c1410',
+          backgroundColor: '#FAF5EF',
+          shadowColor: '#3D2B1F',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          elevation: 2,
+          borderBottomWidth: 1,
+          borderBottomColor: 'rgba(180,160,140,0.2)',
         },
-        headerTintColor: '#f5e6d3',
+        headerTintColor: '#3D2B1F',
         headerTitleStyle: {
           fontWeight: '700',
           letterSpacing: 0.5,
+          color: '#3D2B1F',
         },
       }}>
       <Tabs.Screen

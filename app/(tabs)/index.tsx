@@ -9,11 +9,12 @@ import type { CafeMapMarker } from '@/lib/types/cafe';
 import { useAuthStore } from '@/store/authStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { useCallback, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 export default function MapaScreen() {
   const user = useAuthStore((s) => s.user);
+  const displayName = useAuthStore((s) => s.displayName);
   const initialized = useAuthStore((s) => s.initialized);
   const { coordsOrDefault } = useUserLocation();
   const center = useMemo<[number, number]>(
@@ -31,14 +32,21 @@ export default function MapaScreen() {
     if (!user) {
       return DEMO_MARKERS;
     }
-    return cafes.map((c) => ({
+    // When logged in: merge database cafes with DEMO_MARKERS as fallback
+    const dbMarkers: CafeMapMarker[] = cafes.map((c) => ({
       id: c.id,
       name: c.name,
-      coordinate: [c.lng, c.lat],
+      coordinate: [c.lng, c.lat] as [number, number],
       hot: (c.check_ins_recientes ?? 0) >= 2,
       distanceM: c.distance_m,
       address: c.address,
     }));
+    // If database returned cafes, merge with demo (demo as fallback, db takes priority)
+    const dbIds = new Set(dbMarkers.map((m) => m.id));
+    const demoFallback = DEMO_MARKERS.filter((m) => !dbIds.has(m.id));
+    const merged = [...dbMarkers, ...demoFallback];
+    // If nothing at all, always show demo markers
+    return merged.length > 0 ? merged : DEMO_MARKERS;
   }, [user, cafes]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -70,10 +78,6 @@ export default function MapaScreen() {
     }
   }, [checkIn, selected, user]);
 
-  if (!initialized) {
-    return <View className="flex-1 bg-[#1c1410]" />;
-  }
-
   return (
     <View className="flex-1 bg-[#1c1410]">
       <StatusBar style="light" />
@@ -83,7 +87,7 @@ export default function MapaScreen() {
         selectedId={selectedId}
         onSelectCafe={setSelectedIdWrapped}
       />
-      <MapFloatingHeader userEmail={user?.email ?? null} loadingCafes={!!user && loadingCafes} />
+      <MapFloatingHeader userEmail={user?.email ?? null} displayName={displayName} loadingCafes={!!user && loadingCafes} />
       <BottomCafeSheet
         cafe={selected}
         user={user}
@@ -92,7 +96,7 @@ export default function MapaScreen() {
         checkInLoading={checkInLoading}
         checkInMessage={checkInMsg}
         favorite={favorite}
-        onToggleFavorite={() => selected && toggleFavorite(selected.id)}
+        onToggleFavorite={() => selected && toggleFavorite({ id: selected.id, name: selected.name, address: selected.address, hot: selected.hot })}
         demoMode={!user}
       />
     </View>

@@ -8,17 +8,40 @@ export function AuthBootstrap({ children }: { children: ReactNode }) {
   const setSession = useAuthStore((s) => s.setSession);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    let isMounted = true;
+
+    // Supabase auth checking
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (!isMounted) return;
+        if (error) console.log('Auth getSession error:', error);
+        setSession(session);
+      })
+      .catch((err) => {
+        console.log('Auth exception:', err);
+        if (isMounted) setSession(null);
+      });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (isMounted) {
+        setSession(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Fallback in case Supabase hangs silently on strict browsers
+    const timeout = setTimeout(() => {
+      if (isMounted && !useAuthStore.getState().initialized) {
+        setSession(null);
+      }
+    }, 2500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [setSession]);
 
   return <>{children}</>;

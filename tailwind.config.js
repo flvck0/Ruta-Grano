@@ -14,6 +14,16 @@ module.exports = {
           DEFAULT: '#c4836c',
           muted: '#a89888',
         },
+        cream: {
+          50: '#FFFDF9',
+          100: '#FAF5EF',
+          200: '#F0E6D8',
+          300: '#E2D4C2',
+        },
+        espresso: {
+          DEFAULT: '#3D2B1F',
+          light: '#5C4033',
+        },
       },
     },
   },

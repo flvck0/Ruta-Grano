@@ -6,4 +6,26 @@
   html {
     font-family: 'DM Sans', system-ui, sans-serif;
   }
+
+  /* Custom scrollbar for web */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(196, 131, 108, 0.3);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(196, 131, 108, 0.5);
+  }
+
+  /* Smooth transitions base */
+  * {
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
 }

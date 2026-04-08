@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import '../global.css';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthBootstrap } from '@/providers/AuthBootstrap';
