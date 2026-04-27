@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
@@ -17,16 +17,14 @@ export function MapFloatingHeader({ userEmail, displayName, loadingCafes }: Prop
     <View className="absolute left-0 right-0 top-0 z-10 px-4" style={{ paddingTop: Math.max(insets.top, 12) + 8 }}>
       <View
         className="flex-row items-center justify-between rounded-3xl px-4 py-3"
-        style={{
-          backgroundColor: 'rgba(250,245,239,0.92)',
-          borderWidth: 1,
-          borderColor: 'rgba(180,160,140,0.3)',
-          shadowColor: '#3D2B1F',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          elevation: 6,
-        }}>
+        style={[
+          {
+            backgroundColor: 'rgba(28,20,16,0.88)',
+            borderWidth: 1,
+            borderColor: 'rgba(212,165,116,0.15)',
+          },
+          Platform.OS === 'web' ? ({ backdropFilter: 'blur(20px)' } as any) : {}
+        ]}>
         <View className="flex-row items-center gap-3">
           <View
             className="h-11 w-11 items-center justify-center rounded-2xl"
@@ -37,7 +35,7 @@ export function MapFloatingHeader({ userEmail, displayName, loadingCafes }: Prop
             <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 2, color: '#D4A574', textTransform: 'uppercase' }}>
               Ruta Grano
             </Text>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#3D2B1F' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#f5e6d3' }}>
               Mapa cafeterías
             </Text>
             {loadingCafes ? (
@@ -53,9 +51,9 @@ export function MapFloatingHeader({ userEmail, displayName, loadingCafes }: Prop
         <Link href={userEmail ? '/cuenta' : '/login'} asChild>
           <Pressable
             className="flex-row items-center gap-2 rounded-2xl px-3 py-2.5 active:opacity-80"
-            style={{ backgroundColor: 'rgba(212,165,116,0.12)' }}>
-            <Ionicons name={userEmail ? 'person' : 'log-in-outline'} size={20} color="#A07850" />
-            <Text className="max-w-[96px]" numberOfLines={1} style={{ fontSize: 14, fontWeight: '500', color: '#5C4033' }}>
+            style={{ backgroundColor: userEmail ? 'rgba(212,165,116,0.12)' : '#D4A574' }}>
+            <Ionicons name={userEmail ? 'person' : 'log-in-outline'} size={20} color={userEmail ? '#D4A574' : '#fff'} />
+            <Text className="max-w-[96px]" numberOfLines={1} style={{ fontSize: 14, fontWeight: '500', color: userEmail ? '#D4A574' : '#fff' }}>
               {label || 'Entrar'}
             </Text>
           </Pressable>

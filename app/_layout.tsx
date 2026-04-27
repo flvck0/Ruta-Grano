@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import '../global.css';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthBootstrap } from '@/providers/AuthBootstrap';
@@ -60,7 +59,11 @@ function RootLayoutNav() {
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="add-cafe" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="thread/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="preferences/notificaciones" options={{ headerShown: false }} />
+            <Stack.Screen name="preferences/privacidad" options={{ headerShown: false }} />
+            <Stack.Screen name="preferences/ayuda" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
         </ThemeProvider>

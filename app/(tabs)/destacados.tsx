@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Link } from 'expo-router';
 
 import { useDestacados } from '@/hooks/useDestacados';
 import { useAuthStore } from '@/store/authStore';
@@ -29,14 +30,71 @@ export default function DestacadosScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#1c1410] px-6">
-        <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl" style={{ backgroundColor: 'rgba(212,165,116,0.2)' }}>
-          <Ionicons name="trophy-outline" size={40} color="#D4A574" />
-        </View>
-        <Text className="mb-2 text-center text-xl font-semibold text-[#f5e6d3]">Ranking del mes</Text>
-        <Text className="mt-2 text-center text-sm leading-5 text-[#a89888]">
-          Inicia sesión para ver las cafeterías con más check-ins en los últimos 30 días.
-        </Text>
+      <View className="flex-1 bg-[#1c1410]">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+          {/* Decorative background circles */}
+          <View style={{ position: 'absolute', top: '15%', right: '-10%', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(212,165,116,0.04)' }} />
+          <View style={{ position: 'absolute', bottom: '20%', left: '-15%', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(212,165,116,0.03)' }} />
+
+          {/* Trophy icon */}
+          <View style={{
+            width: 96, height: 96, borderRadius: 32, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(212,165,116,0.12)',
+            marginBottom: 24,
+          }}>
+            <Ionicons name="trophy" size={48} color="#D4A574" />
+          </View>
+
+          <Text style={{ fontSize: 28, fontWeight: '700', color: '#f5e6d3', textAlign: 'center', marginBottom: 12 }}>
+            Ranking del mes
+          </Text>
+
+          <Text style={{ fontSize: 15, color: '#a89888', textAlign: 'center', lineHeight: 22, maxWidth: 320, marginBottom: 8 }}>
+            Descubre las cafeterías más populares de Santiago según los check-ins de la comunidad.
+          </Text>
+
+          <Text style={{ fontSize: 13, color: '#6b5d52', textAlign: 'center', marginBottom: 32 }}>
+            Inicia sesión para ver el ranking completo
+          </Text>
+
+          {/* Preview cards */}
+          <View style={{ width: '100%', maxWidth: 380, gap: 12, marginBottom: 32 }}>
+            {['🥇 Café de especialidad #1', '🥈 Café de especialidad #2', '🥉 Café de especialidad #3'].map((label, i) => (
+              <View key={i} style={{
+                flexDirection: 'row', alignItems: 'center', gap: 12,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+                borderRadius: 16, padding: 16,
+                opacity: 0.5 + (0.15 * (3 - i)),
+              }}>
+                <View style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  backgroundColor: `${MEDAL_COLORS[i]}15`,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Ionicons name="trophy" size={20} color={MEDAL_COLORS[i]} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ height: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 7, width: '70%', marginBottom: 6 }} />
+                  <View style={{ height: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 5, width: '45%' }} />
+                </View>
+                <Ionicons name="lock-closed" size={16} color="#6b5d52" />
+              </View>
+            ))}
+          </View>
+
+          <Link href="/login" asChild>
+            <Pressable style={{
+              backgroundColor: '#D4A574',
+              paddingHorizontal: 32, paddingVertical: 16,
+              borderRadius: 16,
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+            }}>
+              <Ionicons name="log-in-outline" size={20} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Entrar para ver ranking</Text>
+            </Pressable>
+          </Link>
+        </ScrollView>
       </View>
     );
   }

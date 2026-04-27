@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { timeAgo } from '@/lib/utils/timeAgo';
 
-type ReviewRow = {
+type Review = {
   id: string;
   author_name: string | null;
   body: string;
@@ -15,127 +16,117 @@ type ReviewRow = {
 export function CafeReviews({ cafeId }: { cafeId: string }) {
   const user = useAuthStore((s) => s.user);
   const displayName = useAuthStore((s) => s.displayName);
-
-  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inputText, setInputText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    async function loadReviews() {
-      setLoading(true);
-      const { data } = await supabase
-        .from('cafe_reviews')
-        .select('id, author_name, body, created_at')
-        .eq('cafe_id', cafeId)
-        .order('created_at', { ascending: false });
-
-      if (active) {
-        setReviews((data as ReviewRow[]) ?? []);
+    let isMounted = true;
+    async function load() {
+      if (!user) {
         setLoading(false);
+        return;
       }
+      setLoading(true);
+      setError(null);
+      const { data, error: e } = await supabase
+        .from('cafe_reviews')
+        .select('*')
+        .eq('cafe_id', cafeId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!isMounted) return;
+      if (e) setError(e.message);
+      else setReviews(data ?? []);
+      setLoading(false);
     }
-    loadReviews();
-    return () => {
-      active = false;
+    load();
+    return () => { isMounted = false; };
+  }, [cafeId, user]);
+
+  async function addReview() {
+    if (!user || !body.trim()) return;
+    setSending(true);
+    const newReview = {
+      cafe_id: cafeId,
+      user_id: user.id,
+      body: body.trim(),
+      author_name: displayName || 'Usuario Anónimo',
     };
-  }, [cafeId]);
-
-  async function handleSubmit() {
-    const txt = inputText.trim();
-    if (!txt || !user) return;
-
-    setSubmitting(true);
-    const authorName = displayName || user.email?.split('@')[0] || null;
-
-    const { data } = await supabase
+    
+    const { data, error: e } = await supabase
       .from('cafe_reviews')
-      .insert({
-        cafe_id: cafeId,
-        user_id: user.id,
-        author_name: authorName,
-        body: txt,
-      })
-      .select('id, author_name, body, created_at')
+      .insert(newReview)
+      .select()
       .single();
 
-    if (data) {
-      setReviews((prev) => [data as ReviewRow, ...prev]);
-      setInputText('');
+    setSending(false);
+    if (e) {
+      setError(e.message);
+    } else if (data) {
+      setReviews((prev) => [data, ...prev]);
+      setBody('');
     }
-    setSubmitting(false);
   }
 
-  function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'ahora';
-    if (mins < 60) return `hace ${mins}m`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `hace ${hrs}h`;
-    const days = Math.floor(hrs / 24);
-    return `hace ${days}d`;
+  if (!user) {
+    return (
+      <View className="items-center py-4">
+        <Ionicons name="lock-closed-outline" size={24} color="#8a7a6a" />
+        <Text className="mt-2 text-center text-sm text-[#8a7a6a]">Inicia sesión para ver las reseñas</Text>
+      </View>
+    );
   }
 
   return (
-    <View className="mt-2">
-      <Text className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#D4A574' }}>
-        Opiniones ({reviews.length})
-      </Text>
+    <View className="py-2">
+      {/* New Review Form */}
+      <View className="mb-5 flex-row items-end gap-3">
+        <TextInput
+          className="flex-1 rounded-2xl border border-white/10 bg-[#2a1f18] px-4 py-3 text-sm text-[#f5e6d3]"
+          placeholder="¿Qué te pareció este café?"
+          placeholderTextColor="#6b5d52"
+          value={body}
+          onChangeText={setBody}
+          multiline
+        />
+        <Pressable
+          disabled={sending || !body.trim()}
+          onPress={addReview}
+          className="h-[46px] w-[46px] items-center justify-center rounded-2xl active:opacity-80 disabled:opacity-40"
+          style={{ backgroundColor: '#D4A574' }}>
+          {sending ? (
+            <ActivityIndicator color="#1c1410" size="small" />
+          ) : (
+            <Ionicons name="send" size={18} color="#1c1410" style={{ marginLeft: 2 }} />
+          )}
+        </Pressable>
+      </View>
 
+      {/* Reviews List */}
       {loading ? (
-        <ActivityIndicator size="small" color="#D4A574" />
-      ) : reviews.length > 0 ? (
-        <View className="mb-4">
+        <ActivityIndicator color="#D4A574" style={{ marginVertical: 16 }} />
+      ) : error ? (
+        <Text className="text-sm text-red-400">{error}</Text>
+      ) : reviews.length === 0 ? (
+        <Text className="text-center text-sm italic text-[#6b5d52]">Aún no hay reseñas. ¡Sé el primero!</Text>
+      ) : (
+        <View className="gap-4">
           {reviews.map((r) => (
-            <View key={r.id} className="mb-2 rounded-xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-              <Text className="text-sm leading-5 text-[#d4c4b4]">"{r.body}"</Text>
-              <View className="mt-2 flex-row items-center gap-2">
-                <View className="h-5 w-5 items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(212,165,116,0.2)' }}>
-                  <Text style={{ fontSize: 9, fontWeight: '700', color: '#D4A574' }}>
-                    {(r.author_name ?? 'U').slice(0, 2).toUpperCase()}
-                  </Text>
-                </View>
-                <Text className="text-xs text-[#8a7a6a]">
-                  {r.author_name ?? 'Anónimo'} · {timeAgo(r.created_at)}
-                </Text>
+            <View key={r.id}>
+              <View className="mb-1 flex-row items-center justify-between">
+                <Text className="font-semibold text-[#d4c4b4]">{r.author_name || 'Anónimo'}</Text>
+                <Text className="text-xs text-[#6b5d52]">{timeAgo(r.created_at)}</Text>
               </View>
+              <Text className="text-sm leading-5 text-[#f5e6d3]">{r.body}</Text>
             </View>
           ))}
         </View>
-      ) : (
-        <View className="mb-4 py-2">
-          <Text className="text-xs text-[#8a7a6a]">No hay opiniones todavía. ¡Sé el primero!</Text>
-        </View>
       )}
-
-      {user ? (
-        <>
-          <TextInput
-            className="rounded-2xl border border-white/10 bg-[#1c1410] px-4 py-3 text-sm text-[#f5e6d3]"
-            placeholder="¿Qué te parece este café?"
-            placeholderTextColor="#6b5d52"
-            multiline
-            value={inputText}
-            onChangeText={setInputText}
-          />
-          <Pressable
-            disabled={submitting || !inputText.trim()}
-            onPress={handleSubmit}
-            className="mt-2 flex-row items-center justify-center gap-2 rounded-xl py-2.5 active:opacity-90 disabled:opacity-40"
-            style={{ backgroundColor: '#D4A574' }}>
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="chatbubble-outline" size={16} color="#fff" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>Enviar opinión</Text>
-              </>
-            )}
-          </Pressable>
-        </>
-      ) : null}
     </View>
   );
 }

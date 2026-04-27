@@ -13,6 +13,7 @@ import {
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { timeAgo } from '@/lib/utils/timeAgo';
 
 type PostRow = {
   id: string;
@@ -125,6 +126,13 @@ export default function ThreadDetailScreen() {
     load();
   }
 
+  async function borrarHiloActual() {
+    if (typeof window !== 'undefined' && !window.confirm('¿Seguro que quieres borrar este hilo?')) return;
+    const { error } = await supabase.from('forum_threads').delete().eq('id', id);
+    if (error) alert('Error: ' + error.message);
+    else router.replace('/(tabs)/comunidad');
+  }
+
   async function vote(postId: string, value: 1 | -1) {
     if (!user) return;
 
@@ -165,16 +173,6 @@ export default function ThreadDetailScreen() {
     }
   }
 
-  function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'ahora';
-    if (mins < 60) return `hace ${mins}m`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `hace ${hrs}h`;
-    const days = Math.floor(hrs / 24);
-    return `hace ${days}d`;
-  }
 
   if (loading || !thread) {
     return (
@@ -202,7 +200,14 @@ export default function ThreadDetailScreen() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}>
         {/* Thread header card */}
         <View className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <Text className="text-xl font-bold text-[#f5e6d3]">{thread.title}</Text>
+          <View className="flex-row justify-between items-start">
+            <Text className="flex-1 text-xl font-bold text-[#f5e6d3]">{thread.title}</Text>
+            {user && user.id === thread.created_by ? (
+              <Pressable onPress={borrarHiloActual} className="ml-3 p-2 rounded-full bg-red-500/10 active:opacity-70">
+                <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              </Pressable>
+            ) : null}
+          </View>
           {thread.body ? (
             <Text className="mt-3 text-base leading-6 text-[#d4c4b4]">{thread.body}</Text>
           ) : null}

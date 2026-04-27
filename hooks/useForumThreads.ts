@@ -7,6 +7,7 @@ export type ForumThreadRow = {
   title: string;
   body: string | null;
   created_at: string;
+  created_by: string;
 };
 
 export function useForumThreads(enabled: boolean, refreshKey = 0) {
@@ -23,7 +24,7 @@ export function useForumThreads(enabled: boolean, refreshKey = 0) {
     setLoading(true);
     supabase
       .from('forum_threads')
-      .select('id, title, body, created_at')
+      .select('id, title, body, created_at, created_by')
       .order('created_at', { ascending: false })
       .limit(40)
       .then(({ data, error: qError }) => {

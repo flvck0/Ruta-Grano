@@ -4,18 +4,19 @@ import { MapFloatingHeader } from '@/components/map/MapFloatingHeader';
 import { useCafeteriasCercanas } from '@/hooks/useCafeteriasCercanas';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useUserLocation } from '@/hooks/useUserLocation';
-import { DEMO_MARKERS } from '@/lib/constants/demoMarkers';
+
 import type { CafeMapMarker } from '@/lib/types/cafe';
 import { useAuthStore } from '@/store/authStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { useCallback, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, Pressable } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MapaScreen() {
   const user = useAuthStore((s) => s.user);
   const displayName = useAuthStore((s) => s.displayName);
-  const initialized = useAuthStore((s) => s.initialized);
   const { coordsOrDefault } = useUserLocation();
   const center = useMemo<[number, number]>(
     () => [coordsOrDefault.lng, coordsOrDefault.lat],
@@ -25,15 +26,11 @@ export default function MapaScreen() {
   const { cafes, loading: loadingCafes } = useCafeteriasCercanas(
     coordsOrDefault.lat,
     coordsOrDefault.lng,
-    !!user
+    true // Always fetch from DB regardless of auth state
   );
 
   const markers: CafeMapMarker[] = useMemo(() => {
-    if (!user) {
-      return DEMO_MARKERS;
-    }
-    // When logged in: merge database cafes with DEMO_MARKERS as fallback
-    const dbMarkers: CafeMapMarker[] = cafes.map((c) => ({
+    return cafes.map((c) => ({
       id: c.id,
       name: c.name,
       coordinate: [c.lng, c.lat] as [number, number],
@@ -41,13 +38,7 @@ export default function MapaScreen() {
       distanceM: c.distance_m,
       address: c.address,
     }));
-    // If database returned cafes, merge with demo (demo as fallback, db takes priority)
-    const dbIds = new Set(dbMarkers.map((m) => m.id));
-    const demoFallback = DEMO_MARKERS.filter((m) => !dbIds.has(m.id));
-    const merged = [...dbMarkers, ...demoFallback];
-    // If nothing at all, always show demo markers
-    return merged.length > 0 ? merged : DEMO_MARKERS;
-  }, [user, cafes]);
+  }, [cafes]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -99,6 +90,15 @@ export default function MapaScreen() {
         onToggleFavorite={() => selected && toggleFavorite({ id: selected.id, name: selected.name, address: selected.address, hot: selected.hot })}
         demoMode={!user}
       />
+      {user && !selectedId ? (
+        <View style={{ position: 'absolute', bottom: 32, right: 24 }}>
+          <Link href="/add-cafe" asChild>
+            <Pressable className="bg-[#D4A574] w-14 h-14 rounded-full items-center justify-center shadow-lg active:opacity-80 shadow-black/50" style={{ elevation: 5 }}>
+              <Ionicons name="add" size={30} color="#fff" />
+            </Pressable>
+          </Link>
+        </View>
+      ) : null}
     </View>
   );
 }

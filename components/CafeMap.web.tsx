@@ -1,6 +1,7 @@
 import type { CafeMapProps } from '@/lib/types/cafe';
-import mapboxgl from 'mapbox-gl';
-import { useEffect, useRef, useState } from 'react';
+// @ts-ignore
+import mapboxgl from 'mapbox-gl/dist/mapbox-gl.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 const DEFAULT_CENTER: [number, number] = [-70.6693, -33.4489];
@@ -11,243 +12,179 @@ function isValidLngLat(coord: any): coord is [number, number] {
          typeof coord[1] === 'number' && !Number.isNaN(coord[1]);
 }
 
-/** Inject marker and mapbox CSS once */
 function injectStyles() {
-  // Inject Mapbox Core CSS if missing
-  if (typeof document !== 'undefined' && !document.getElementById('mapbox-gl-css')) {
+  if (typeof document === 'undefined') return;
+  if (!document.getElementById('mapbox-gl-css')) {
     const link = document.createElement('link');
     link.id = 'mapbox-gl-css';
     link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/mapbox-gl@2.15.0/dist/mapbox-gl.css';
     document.head.appendChild(link);
   }
-
-  // Inject Custom Markers CSS
-  if (typeof document !== 'undefined' && !document.getElementById('ruta-grano-markers')) {
-  const style = document.createElement('style');
-  style.id = 'ruta-grano-markers';
-  style.textContent = `
-    .rg-marker {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      transition: transform 0.15s ease;
-    }
-    .rg-marker:hover {
-      transform: scale(1.12) translateY(-2px);
-      z-index: 10 !important;
-    }
-    .rg-marker-pin {
-      width: 38px;
-      height: 38px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2.5px solid #fff;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-      transition: all 0.15s ease;
-    }
-    .rg-marker.selected .rg-marker-pin {
-      width: 44px;
-      height: 44px;
-      border-color: #fbbf24;
-      border-width: 3px;
-      box-shadow: 0 4px 16px rgba(251,191,36,0.35);
-    }
-    .rg-marker-icon {
-      transform: rotate(45deg);
-      font-size: 16px;
-      line-height: 1;
-      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
-    }
-    .rg-marker.selected .rg-marker-icon {
-      font-size: 19px;
-    }
-    .rg-marker-label {
-      margin-top: 4px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: rgba(28,20,16,0.85);
-      color: #f5e6d3;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-    .rg-marker:hover .rg-marker-label,
-    .rg-marker.selected .rg-marker-label {
-      opacity: 1;
-    }
-    .rg-marker-hot .rg-marker-pin {
-      box-shadow: 0 3px 10px rgba(0,0,0,0.25), 0 0 14px rgba(249,115,22,0.35);
-    }
-  `;
-  document.head.appendChild(style);
-}
+  if (!document.getElementById('ruta-grano-markers')) {
+    const style = document.createElement('style');
+    style.id = 'ruta-grano-markers';
+    style.textContent = `
+      .rg-marker { display:flex; flex-direction:column; align-items:center; cursor:pointer; transition:transform .15s ease; }
+      .rg-marker:hover { transform:scale(1.12) translateY(-2px); z-index:10!important; }
+      .rg-marker-pin { width:38px; height:38px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; border:2.5px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,.25); }
+      .rg-marker.selected .rg-marker-pin { width:44px; height:44px; border-color:#fbbf24; border-width:3px; box-shadow:0 4px 16px rgba(251,191,36,.35); }
+      .rg-marker-icon { transform:rotate(45deg); font-size:16px; line-height:1; }
+      .rg-marker.selected .rg-marker-icon { font-size:19px; }
+      .rg-marker-label { margin-top:4px; padding:2px 8px; border-radius:10px; background:rgba(28,20,16,.85); color:#f5e6d3; font-size:11px; font-weight:600; white-space:nowrap; max-width:120px; overflow:hidden; text-overflow:ellipsis; pointer-events:none; opacity:0; transition:opacity .15s ease; }
+      .rg-marker:hover .rg-marker-label, .rg-marker.selected .rg-marker-label { opacity:1; }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
-function createMarkerElement(
-  cafe: { name: string; hot?: boolean },
-  isSelected: boolean
-): HTMLElement {
-  const wrapper = document.createElement('div');
-  wrapper.className = `rg-marker${isSelected ? ' selected' : ''}${cafe.hot ? ' rg-marker-hot' : ''}`;
-
+function createMarkerEl(name: string, hot: boolean | undefined, selected: boolean): HTMLElement {
+  const w = document.createElement('div');
+  w.className = `rg-marker${selected ? ' selected' : ''}`;
   const pin = document.createElement('div');
   pin.className = 'rg-marker-pin';
-  pin.style.background = cafe.hot
-    ? 'linear-gradient(135deg, #f97316, #ef4444)'
-    : 'linear-gradient(135deg, #D4A574, #A67C52)';
-
-  const icon = document.createElement('span');
-  icon.className = 'rg-marker-icon';
-  icon.textContent = '☕';
-
-  pin.appendChild(icon);
-  wrapper.appendChild(pin);
-
-  const label = document.createElement('div');
-  label.className = 'rg-marker-label';
-  label.textContent = cafe.name;
-  wrapper.appendChild(label);
-
-  return wrapper;
+  pin.style.background = hot ? 'linear-gradient(135deg,#f97316,#ef4444)' : 'linear-gradient(135deg,#D4A574,#A67C52)';
+  const ico = document.createElement('span');
+  ico.className = 'rg-marker-icon';
+  ico.textContent = '☕';
+  pin.appendChild(ico);
+  w.appendChild(pin);
+  const lbl = document.createElement('div');
+  lbl.className = 'rg-marker-label';
+  lbl.textContent = name;
+  w.appendChild(lbl);
+  return w;
 }
 
 export function CafeMap({ markers, center, selectedId, onSelectCafe }: CafeMapProps) {
-  const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const onSelectRef = useRef(onSelectCafe);
+  const [mapReady, setMapReady] = useState(false);
   onSelectRef.current = onSelectCafe;
 
   const safeCenter = isValidLngLat(center) ? center : DEFAULT_CENTER;
+  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-  // INIT map once
-  useEffect(() => {
-    const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
-    const el = mapElRef.current;
-    
-    if (!token || !el || typeof window === 'undefined') return;
+  // Use callback ref to init map when the DOM node is available
+  const mapContainerRef = useCallback((node: HTMLDivElement | null) => {
+    // Cleanup old map if any
+    if (mapRef.current) {
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
+      mapRef.current.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    }
+
+    if (!node || !token || typeof window === 'undefined') return;
 
     injectStyles();
     mapboxgl.accessToken = token;
 
-    let map: mapboxgl.Map;
-    let clickHandler: any;
-    let resizeObserver: ResizeObserver | null = null;
-
     try {
-      map = new mapboxgl.Map({
-        container: el,
-        style: 'mapbox://styles/mapbox/streets-v12',
+      const map = new mapboxgl.Map({
+        container: node,
+        style: 'mapbox://styles/mapbox/dark-v11',
         center: safeCenter,
         zoom: 13,
-        attributionControl: true,
+        attributionControl: false,
       });
 
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
+
       mapRef.current = map;
-      clickHandler = () => onSelectRef.current(null);
-      map.on('click', clickHandler);
 
-      // Force resize observation in case dynamic CSS loads late
-      if (typeof ResizeObserver !== 'undefined') {
-        resizeObserver = new ResizeObserver(() => {
-          if (map) map.resize();
-        });
-        resizeObserver.observe(el);
-      } else {
-        // Fallback for older browsers
-        setTimeout(() => map && map.resize(), 500);
-        setTimeout(() => map && map.resize(), 1500);
-      }
+      map.on('load', () => {
+        setMapReady(true);
+        map.resize();
+      });
+
+      map.on('click', () => onSelectRef.current(null));
+
+      // ResizeObserver to automatically resize the map if the container changes
+      // This fixes the 'bugeado' map canvas when returning from modals
+      const resizeObserver = new ResizeObserver(() => {
+        map.resize();
+      });
+      resizeObserver.observe(node);
+
+      // Save observer to cleanup
+      (map as any)._resizeObserver = resizeObserver;
+
+      // Fallback resizes
+      setTimeout(() => map.resize(), 500);
+      setTimeout(() => map.resize(), 2000);
     } catch (e) {
-      console.error("MAPBOX FATAL CRASH:", e);
+      console.error('Mapbox init error:', e);
     }
+  }, [token]);
 
+  // Cleanup map when component unmounts
+  useEffect(() => {
     return () => {
-      if (resizeObserver) resizeObserver.disconnect();
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      if (map) {
-        if (clickHandler) map.off('click', clickHandler);
-        map.remove();
+      if (mapRef.current) {
+        if ((mapRef.current as any)._resizeObserver) {
+          (mapRef.current as any)._resizeObserver.disconnect();
+        }
+        mapRef.current.remove();
+        mapRef.current = null;
       }
-      mapRef.current = null;
     };
   }, []);
 
-  // UPDATE markers when data or selection changes
+  // UPDATE markers
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
-    // Remove old markers
-    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
     for (const cafe of markers) {
       if (!isValidLngLat(cafe.coordinate)) continue;
-
-      const el = createMarkerElement(cafe, selectedId === cafe.id);
-
-      // Click handler on the wrapper div
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onSelectCafe(cafe.id);
-      });
-
-      // Use 'bottom' anchor so the tip of the pin sits on the coordinates
+      const el = createMarkerEl(cafe.name, cafe.hot, selectedId === cafe.id);
+      el.addEventListener('click', (e) => { e.stopPropagation(); onSelectCafe(cafe.id); });
       const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat(cafe.coordinate)
         .addTo(map);
-
       markersRef.current.push(marker);
     }
-  }, [markers, selectedId, onSelectCafe]);
+  }, [markers, selectedId, onSelectCafe, mapReady]);
 
-  // FLY TO on selection
+  // FLY TO
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    const selected = markers.find((m) => m.id === selectedId);
-    if (selected && isValidLngLat(selected.coordinate)) {
-      map.flyTo({ center: selected.coordinate, zoom: 15, essential: true });
-    } else {
-      map.flyTo({ center: isValidLngLat(center) ? center : DEFAULT_CENTER, zoom: 13, essential: true });
+    if (!map || !mapReady) return;
+    const sel = markers.find(m => m.id === selectedId);
+    if (sel && isValidLngLat(sel.coordinate)) {
+      map.flyTo({ center: sel.coordinate, zoom: 15, essential: true });
     }
-  }, [selectedId, markers, center]);
-
-  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  }, [selectedId, markers, mapReady]);
 
   if (!token) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#1c1410] px-6">
-        <Text className="text-center text-base text-[#d4c4b4]">
-          Configura <Text className="font-mono text-[#e8c4b0]">EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN</Text> en{' '}
-          <Text className="font-mono text-[#8a7a6a]">.env</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1c1410', padding: 24 }}>
+        <Text style={{ textAlign: 'center', fontSize: 14, color: '#d4c4b4' }}>
+          Configura EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN en .env
         </Text>
       </View>
     );
   }
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#1c1410' }}>
-      <div
-        ref={mapElRef as any}
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
-      />
-    </View>
+    <div
+      ref={mapContainerRef}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#1c1410',
+      }}
+    />
   );
 }

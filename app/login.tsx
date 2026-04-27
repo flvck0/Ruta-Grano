@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  TouchableOpacity,
 } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
@@ -94,6 +95,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled={Platform.OS !== 'web'}
         className="flex-1 bg-[#1c1410]">
         <ScrollView
           className="flex-1"
@@ -156,6 +158,7 @@ export default function LoginScreen() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
+              onSubmitEditing={submit}
             />
 
             {/* Confirm Password */}
@@ -219,7 +222,7 @@ export default function LoginScreen() {
             ) : null}
 
             {/* Submit Button */}
-            <Pressable
+            <TouchableOpacity
               disabled={!canSubmit}
               onPress={submit}
               className="flex-row items-center justify-center rounded-2xl py-4 active:opacity-90 disabled:opacity-40"
@@ -231,31 +234,26 @@ export default function LoginScreen() {
                   {mode === 'login' ? 'Entrar' : 'Registrarme'}
                 </Text>
               )}
-            </Pressable>
+            </TouchableOpacity>
 
             {/* Toggle mode */}
-            <Pressable onPress={switchMode} className="mt-5">
+            <TouchableOpacity onPress={switchMode} className="mt-5">
               <Text className="text-center text-sm text-[#a89888]">
                 {mode === 'login' ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
                 <Text className="font-semibold" style={{ color: '#D4A574' }}>
                   {mode === 'login' ? 'Crear una' : 'Entrar'}
                 </Text>
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
           {/* Back link */}
-          <Pressable onPress={() => router.back()} className="mt-8 flex-row items-center justify-center gap-2">
+          <TouchableOpacity onPress={() => { if (router.canGoBack()) { router.back(); } else { router.replace('/(tabs)'); } }} className="mt-8 flex-row items-center justify-center gap-2">
             <Ionicons name="chevron-back" size={18} color="#8a7a6a" />
             <Text className="text-sm text-[#8a7a6a]">Seguir explorando sin cuenta</Text>
-          </Pressable>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
   );
 }
 
-export const options = {
-  presentation: 'modal' as const,
-  headerShown: false,
-  contentStyle: { backgroundColor: '#1c1410' },
-};

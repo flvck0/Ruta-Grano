@@ -6,11 +6,13 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="theme-color" content="#1c1410" />
+        <title>Ruta Grano — Cafeterías de Santiago</title>
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -42,10 +44,45 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
 const responsiveBackground = `
 body {
-  background-color: #fff;
+  background-color: #1c1410;
+  color: #f5e6d3;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #000;
-  }
-}`;
+
+/* Ensure mapbox container has correct dimensions */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fix mapbox canvas sizing */
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Better mapbox controls on dark theme */
+.mapboxgl-ctrl-group {
+  background: rgba(28,20,16,0.9) !important;
+  border: 1px solid rgba(212,165,116,0.2) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.mapboxgl-ctrl-group button {
+  border-color: rgba(212,165,116,0.1) !important;
+}
+.mapboxgl-ctrl-group button + button {
+  border-top-color: rgba(212,165,116,0.1) !important;
+}
+.mapboxgl-ctrl-group button span {
+  filter: invert(0.85) !important;
+}
+
+/* Smooth loading */
+#root, #__next {
+  min-height: 100vh;
+  background-color: #1c1410;
+}
+`;
