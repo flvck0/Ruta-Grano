@@ -6,6 +6,7 @@ export type CafeMapMarker = {
   hot?: boolean;
   distanceM?: number;
   address?: string | null;
+  images?: string[] | null;
 };
 
 export type CafeMapProps = {
@@ -24,4 +25,5 @@ export type CafeteriaCercanaRow = {
   check_ins_recientes: number;
   lat: number;
   lng: number;
+  images: string[] | null;
 };

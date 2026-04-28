@@ -11,6 +11,8 @@ import '../global.css';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthBootstrap } from '@/providers/AuthBootstrap';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -53,21 +55,25 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <SafeAreaProvider>
-      <AuthBootstrap>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="add-cafe" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="thread/[id]" options={{ headerShown: false }} />
-            <Stack.Screen name="preferences/notificaciones" options={{ headerShown: false }} />
-            <Stack.Screen name="preferences/privacidad" options={{ headerShown: false }} />
-            <Stack.Screen name="preferences/ayuda" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
-        </ThemeProvider>
-      </AuthBootstrap>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthBootstrap>
+          <BottomSheetModalProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="add-cafe" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="thread/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="preferences/notificaciones" options={{ headerShown: false }} />
+                <Stack.Screen name="preferences/privacidad" options={{ headerShown: false }} />
+                <Stack.Screen name="preferences/ayuda" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              </Stack>
+            </ThemeProvider>
+          </BottomSheetModalProvider>
+        </AuthBootstrap>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

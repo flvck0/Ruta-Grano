@@ -37,6 +37,7 @@ export default function MapaScreen() {
       hot: (c.check_ins_recientes ?? 0) >= 2,
       distanceM: c.distance_m,
       address: c.address,
+      images: c.images,
     }));
   }, [cafes]);
 

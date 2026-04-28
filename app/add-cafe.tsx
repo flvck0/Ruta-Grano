@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -26,6 +27,8 @@ export default function AddCafeScreen() {
   const [locating, setLocating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   
+  const [imageUris, setImageUris] = useState<string[]>([]);
+  
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +49,34 @@ export default function AddCafeScreen() {
       setError('No se pudo obtener la ubicación: ' + e.message);
     }
     setLocating(false);
+  }
+
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 5 - imageUris.length,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const newUris = result.assets.map(a => a.uri);
+      // Validar que sean imágenes (en Web a veces picker devuelve archivos raros)
+      const validUris = newUris.filter(uri => {
+        const isImage = uri.match(/\.(jpg|jpeg|png|webp|gif|bmp)$/i) || uri.startsWith('data:image/') || uri.startsWith('blob:');
+        return isImage;
+      });
+      
+      if (validUris.length < newUris.length) {
+        setError('Algunos archivos no eran imágenes válidas y fueron omitidos.');
+      }
+      
+      setImageUris(prev => [...prev, ...validUris].slice(0, 5));
+    }
+  }
+
+  function removeImage(index: number) {
+    setImageUris(prev => prev.filter((_, i) => i !== index));
   }
 
   async function saveCafe() {
@@ -79,13 +110,42 @@ export default function AddCafeScreen() {
       }
     }
 
+    let uploadedImageUrls: string[] = [];
+    if (imageUris.length > 0) {
+      try {
+        const uploadPromises = imageUris.map(async (uri, index) => {
+          const ext = uri.split('.').pop() || 'jpg';
+          const fileName = `${user?.id}-${Date.now()}-${index}.${ext}`;
+          
+          const res = await fetch(uri);
+          const blob = await res.blob();
+          
+          const { error: uploadError } = await supabase.storage.from('cafes').upload(fileName, blob, {
+            contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`
+          });
+          
+          if (uploadError) throw new Error(uploadError.message);
+          
+          const { data } = supabase.storage.from('cafes').getPublicUrl(fileName);
+          return data.publicUrl;
+        });
+
+        uploadedImageUrls = await Promise.all(uploadPromises);
+      } catch (err: any) {
+        setError(`Error al subir imágenes: ${err.message}`);
+        setSaving(false);
+        return;
+      }
+    }
+
     const { error: rpcError } = await supabase.rpc('create_cafeteria', {
       p_name: name.trim(),
       p_description: description.trim() || null,
       p_address: combinedAddress,
       p_lat: finalLocation.lat,
       p_lng: finalLocation.lng,
-      p_rating: rating
+      p_rating: rating,
+      p_images: uploadedImageUrls
     });
 
     setSaving(false);
@@ -132,6 +192,32 @@ export default function AddCafeScreen() {
             <Text className="text-orange-300 flex-1">No se pudieron cargar las comunas. ({locError})</Text>
           </View>
         )}
+
+        <Text className="text-[#D4A574] font-semibold mb-2">Fotos de la Cafetería ({imageUris.length}/5)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5">
+          {imageUris.map((uri, idx) => (
+            <View key={idx} className="mr-3 relative">
+              <Image source={{ uri }} style={{ width: 140, height: 140, borderRadius: 16 }} />
+              <Pressable 
+                onPress={() => removeImage(idx)}
+                className="absolute top-2 right-2 bg-black/60 rounded-full p-1"
+              >
+                <Ionicons name="close" size={20} color="#fff" />
+              </Pressable>
+            </View>
+          ))}
+          
+          {imageUris.length < 5 && (
+            <Pressable 
+              onPress={pickImage}
+              className="bg-[#2a1f18] border border-white/10 rounded-2xl justify-center items-center active:opacity-80"
+              style={{ width: 140, height: 140 }}
+            >
+              <Ionicons name="camera-outline" size={32} color="#6b5d52" />
+              <Text className="text-[#6b5d52] mt-2 font-medium text-xs text-center px-2">Añadir foto</Text>
+            </Pressable>
+          )}
+        </ScrollView>
 
         <Text className="text-[#D4A574] font-semibold mb-2">Nombre de la Cafetería</Text>
         <TextInput

@@ -1,0 +1,23 @@
+# Contexto del Proyecto: Ruta-Grano
+
+## 1. Propósito del Proyecto
+Ruta-Grano es una aplicación dedicada exclusivamente al descubrimiento y comunidad de cafeterías de especialidad. No es un proyecto académico de tesis; es una aplicación funcional de producción.
+
+## 2. Stack Tecnológico (Definitivo)
+- **Frontend:** React / Expo (Mobile & Web).
+- **Backend:** Supabase (Backend-as-a-Service) de forma permanente.
+- **Base de Datos:** PostgreSQL con extensión PostGIS para funciones geográficas.
+- **Mapas:** Mapbox SDK.
+- **Estado:** Zustand (según se ve en la estructura de stores).
+
+## 3. Arquitectura y Estándares
+- **Lógica de Backend:** Se maneja mediante Funciones de Base de Datos (RPC) y políticas de RLS en Supabase. No se planea migrar a ningún otro backend (como Spring Boot o Node.js).
+- **Estructura de SQL:** Todas las migraciones y cambios en la DB deben seguir el formato de archivos en la carpeta `supabase/` con prefijos `patch_` o `seed_`.
+- **Componentes:** Seguir el patrón de diseño actual utilizando los `providers` y `hooks` definidos en la raíz del proyecto.
+- **Tipado:** TypeScript es obligatorio. Cada nueva tabla en Supabase debe tener su interfaz correspondiente en `src/types/`.
+
+## 4. Reglas para el Agente (IA)
+- **Consultas Geoespaciales:** Al trabajar con mapas, usa siempre funciones de PostGIS compatibles con Supabase (ej. `ST_DWithin`).
+- **Seguridad:** Siempre ten en cuenta las políticas de Row Level Security (RLS) al proponer cambios en la base de datos.
+- **Estilo:** Mantener el código limpio y modular, respetando la estructura de carpetas actual (`hooks`, `lib`, `services`, `store`).
+- **Contexto Local:** Antes de responder, prioriza la lectura de `schema.sql` y los archivos dentro de `src/lib/supabase.ts`.
